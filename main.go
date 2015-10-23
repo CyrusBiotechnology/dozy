@@ -14,6 +14,7 @@ import (
 
 var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
 var lockDur = flag.Int("duration", 30, "duration in minutes for which lock files are considered valid")
+var sleepTime = flag.Int("sleep", 0, "duration to sleep at the end of script before exit 0")
 
 func getRunningContainers() ([]string, error) {
 	containers := make([]string, 0)
@@ -133,8 +134,7 @@ func main() {
 				if isStale {
 					log.Println(fmt.Sprintf("found stale lock: %v, continuing..", fileList[i]))
 				} else {
-					log.Println("valid lock found, exiting...")
-					return
+					panic("valid lock found, exiting...")
 				}
 				counter++
 			}
@@ -151,10 +151,11 @@ func main() {
 				log.Println("WARNING: stale lock, killing containers and shutting down")
 				firstDegree()
 			} else {
-				log.Println("valid lock found, exiting.")
+				panic("valid lock found, exiting.")
 			}
 	} else {
 		panic(errors.New(fmt.Sprintf("fucked up lockfile. -lock=%s", *locks)))
 	}
 	log.Println("shutting down...")
+	time.Sleep(time.Second * time.Duration(*sleepTime))
 }
