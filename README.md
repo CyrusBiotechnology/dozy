@@ -33,7 +33,7 @@ Usage help can always be found by running dozy with -h (help).
           duration to sleep at the end of script before exit 0
 
 
-Typical usage (in a crontab) looks something like:
+Typical usage (in a [crontab](https://en.wikipedia.org/wiki/Cron)) looks something like:
 
     # M H DoM Mo DoW    COMMAND
       * * *   *  *      /usr/local/bin/dozy -minuptime=120m -duration=30m -lock=/tmp/locksdir/ && shutdown -h now
