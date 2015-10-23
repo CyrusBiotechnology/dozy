@@ -1,3 +1,4 @@
+// +build darwin linux
 package main
 import (
 	"flag"
@@ -33,13 +34,13 @@ func main() {
 
 	log.Println("")
 	log.Println("         `( ◔ ౪◔)´")
-	log.Println("                   dozey")
+	log.Println("                     dozey")
 	log.Println("")
 	log.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
 
 	sUptime := sigar.Uptime{}
 	sUptime.Get()
-	uptime := time.Duration(sUptime.Length)
+	uptime := time.Duration(int(sUptime.Length)) * time.Second
 
 	if uptime < *minUptime {
 		panic(fmt.Sprintf("uptime not Ok (%v !< %v)", uptime, *minUptime))
