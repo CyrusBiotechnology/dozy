@@ -8,14 +8,12 @@ import (
 	"bytes"
 	"strings"
 	"time"
+	"errors"
+	"log"
 )
 
 var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
-
-func visit(path string, f os.FileInfo, err error) error {
-  fmt.Printf("Visited: %s\n", path)
-  return nil
-}
+var lockDur = flag.Int("duration", 30, "duration in minutes for which lock files are considered valid")
 
 func getRunningContainers() ([]string, error) {
 	containers := make([]string, 0)
@@ -64,14 +62,14 @@ func firstDegree() {
 	for {
 		running, err:= getRunningContainers()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		if len(running) == 0 {
 			break
 		}
 		err = killAllRunningContainers()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 }
@@ -82,7 +80,7 @@ func lockIsStale(lockFile string) (bool, error) {
 		return false, err
 	}
 	lockAge := time.Now().Sub(info.ModTime())
-	if lockAge > time.Hour * 2 {
+	if lockAge > time.Minute * time.Duration(*lockDur) {
 		return true, nil
 	} else {
 		return false, nil
@@ -92,43 +90,71 @@ func lockIsStale(lockFile string) (bool, error) {
 func main() {
 	flag.Parse()
 
-	f, err := os.Open(*locks)
+	log.Println("")
+	log.Println("         `( ◔ ౪◔)´")
+	log.Println("                   dozey")
+	log.Println("")
+	log.Println(fmt.Sprintf("locks valid for %vm, lock: %v", *lockDur, *locks))
+
+	fh, err := os.Open(*locks)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
-	defer f.Close()
-		fi, err := f.Stat()
-		if err != nil {
-		fmt.Println(err)
+	defer fh.Close()
+	locksFh, err := fh.Stat()
+	if err != nil {
+		panic(err)
 		return
 	}
-	switch mode := fi.Mode(); {
-		case mode.IsDir():
-			// locks is a directory
-			fmt.Println("lock is a directory, scanning")
-			fileList := []string{}
-			err := filepath.Walk(*locks, func(path string, f os.FileInfo, err error) error {
+
+	if locksFh.IsDir() {
+		// locks is a directory
+		log.Println("lock is a directory, scanning")
+		fileList := []string{}
+		err := filepath.Walk(*locks, func(path string, f os.FileInfo, err error) error {
+			if ! f.IsDir() {
 				fileList = append(fileList, path)
-				return nil
-			})
-			if (len(fileList) == 1) {
-				fmt.Println("killing containers")
-				firstDegree()
-				fmt.Println("shutting down...")
 			}
-			fmt.Printf("filepath.Walk() returned %v\n", err)
-		case mode.IsRegular():
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+		if (len(fileList) == 0) {
+			log.Println("no locks found, killing containers")
+			firstDegree()
+		} else {
+			counter := 0
+			for i := range (fileList) {
+				isStale, err := lockIsStale(fileList[i])
+				if err != nil {
+					panic(err)
+				}
+				if isStale {
+					log.Println(fmt.Sprintf("found stale lock: %v, continuing..", fileList[i]))
+				} else {
+					log.Println("valid lock found, exiting...")
+					return
+				}
+				counter++
+			}
+			log.Println(fmt.Sprintf("%v lock(s) checked", counter))
+		}
+	} else if locksFh.Mode().IsRegular() {
 			// locks is a file
-			fmt.Println("lock is a file, checking...")
+			log.Println("lock is a file, checking...")
 			isStale, err := lockIsStale(*locks)
 			if err != nil {
 				panic(err)
 			}
 			if isStale {
-				fmt.Println("WARNING: stale lock, killing containers and shutting down")
+				log.Println("WARNING: stale lock, killing containers and shutting down")
 				firstDegree()
 			} else {
-				fmt.Println("valid lock found, exiting.")
+				log.Println("valid lock found, exiting.")
 			}
+	} else {
+		panic(errors.New(fmt.Sprintf("fucked up lockfile. -lock=%s", *locks)))
 	}
+	log.Println("shutting down...")
 }
