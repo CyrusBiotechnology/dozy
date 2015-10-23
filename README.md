@@ -35,5 +35,5 @@ Usage help can always be found by running dozy with -h (help).
 
 Typical usage (in a crontab) looks something like:
 
-    # M H DOM M DOW    COMMAND
-      * * *   * *      /usr/local/bin/dozy -minuptime=120m -duration=30m -lock=/tmp/locksdir/ && shutdown -h now
+    # M H DoM Mo DoW    COMMAND
+      * * *   *  *      /usr/local/bin/dozy -minuptime=120m -duration=30m -lock=/tmp/locksdir/ && shutdown -h now
