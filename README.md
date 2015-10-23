@@ -11,10 +11,15 @@ within that folder, recursively.
 Exit code of 0 means there are no valid locks, and all containers have been killed,
 otherwise there was an error.
 
-# Running
+# Requirements
 
 `dozy` targets Darwin (OS X) and Linux environments. Other systems are not currently 
 supported.
+
+# Installing
+
+Simply download the appropriate "dozy" release for your platform and copy the executable
+to someplace on your path. `/usr/local/bin` is often a good spot. 
 
 # Usage
 
