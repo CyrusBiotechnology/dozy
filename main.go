@@ -7,8 +7,10 @@ import (
 	"time"
 	"errors"
 	"log"
+	"github.com/cloudfoundry/gosigar"
 )
 
+var minUptime = flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
 var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
 var lockDur = flag.Duration("duration", time.Minute * 10, "duration for which lock files are considered valid")
 var sleepDur = flag.Duration("sleep", 0, "duration to sleep at the end of script before exit 0")
@@ -33,7 +35,15 @@ func main() {
 	log.Println("         `( ◔ ౪◔)´")
 	log.Println("                   dozey")
 	log.Println("")
-	log.Println(fmt.Sprintf("locks valid for %vm, lock: %v", *lockDur, *locks))
+	log.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
+
+	sUptime := sigar.Uptime{}
+	sUptime.Get()
+	uptime := time.Duration(sUptime.Length)
+
+	if uptime < *minUptime {
+		panic(fmt.Sprintf("uptime not Ok (%v !< %v)", uptime, *minUptime))
+	}
 
 	fh, err := os.Open(*locks)
 	if err != nil {
