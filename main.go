@@ -8,7 +8,9 @@ import (
 	"time"
 	"errors"
 	"log"
-	"github.com/cloudfoundry/gosigar"
+	"io/ioutil"
+	"strings"
+	"strconv"
 )
 
 var minUptime = flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
@@ -34,16 +36,24 @@ func main() {
 
 	log.Println("")
 	log.Println("         `( ◔ ౪◔)´")
-	log.Println("                     dozey")
+	log.Println("                     dozy")
 	log.Println("")
 	log.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
 
-	sUptime := sigar.Uptime{}
-	sUptime.Get()
-	uptime := time.Duration(int(sUptime.Length)) * time.Second
+	uptime_str, err := ioutil.ReadFile("/proc/uptime")
+	if err != nil {
+		panic(err)
+	}
+	uptime_secnds, err := strconv.Atoi(strings.Split(string(uptime_str), ".")[0])
+	if err != nil {
+		panic(err)
+	}
+	uptime := time.Duration(int(uptime_secnds)) * time.Second
 
 	if uptime < *minUptime {
-		panic(fmt.Sprintf("uptime not Ok (%v !< %v)", uptime, *minUptime))
+		panic(fmt.Sprintf("uptime not Ok (%v < %v)", uptime, *minUptime))
+	} else {
+		fmt.Println("uptime is Ok (%v > %v)", uptime, *minUptime)
 	}
 
 	fh, err := os.Open(*locks)
