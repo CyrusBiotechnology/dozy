@@ -12,6 +12,16 @@ import (
 	"path/filepath"
 )
 
+const VERSION = []int{0, 1, 5}
+
+func getVersion() {
+	version := ""
+	for i := range(VERSION) {
+		version = version + "." + string(VERSION[i])
+	}
+	return version
+}
+
 var minUptime = flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
 var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
 var lockDur = flag.Duration("duration", time.Minute * 10, "duration for which lock files are considered valid")
@@ -40,7 +50,7 @@ func lockIsStale(lockFile string) (bool, error) {
 func main() {
 	flag.Parse()
 
-	logging("/var/log/dozy", " `( ◔ ౪◔)´  dozy")
+	logging("/var/log/dozy", fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
 	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
 
 	uptime_str, err := ioutil.ReadFile("/proc/uptime")
