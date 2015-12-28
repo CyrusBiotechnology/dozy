@@ -4,17 +4,35 @@ import (
 	"flag"
 	"os"
 	"fmt"
-	"path/filepath"
 	"time"
 	"errors"
-	"log"
-	"github.com/cloudfoundry/gosigar"
+	"strings"
+	"strconv"
+	"io/ioutil"
+	"path/filepath"
 )
+
+var VERSION = [...]int{0, 1, 5}
+
+func getVersion() string {
+	versionStr := fmt.Sprintf("v%v", VERSION[0])
+	for i := 1; i < len(VERSION); i++ {
+		versionStr = fmt.Sprintf("%v.%v", versionStr, VERSION[i])
+	}
+	return versionStr
+}
 
 var minUptime = flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
 var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
 var lockDur = flag.Duration("duration", time.Minute * 10, "duration for which lock files are considered valid")
 var sleepDur = flag.Duration("sleep", 0, "duration to sleep at the end of script before exit 0")
+
+func exists(path string) (bool, error) {
+    _, err := os.Stat(path)
+    if err == nil { return true, nil }
+    if os.IsNotExist(err) { return false, nil }
+    return true, err
+}
 
 func lockIsStale(lockFile string) (bool, error) {
 	info, err := os.Stat(lockFile)
@@ -32,23 +50,32 @@ func lockIsStale(lockFile string) (bool, error) {
 func main() {
 	flag.Parse()
 
-	log.Println("")
-	log.Println("         `( ◔ ౪◔)´")
-	log.Println("                     dozey")
-	log.Println("")
-	log.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
+	logging("/var/log/dozy", fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
+	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
 
-	sUptime := sigar.Uptime{}
-	sUptime.Get()
-	uptime := time.Duration(int(sUptime.Length)) * time.Second
+	uptime_str, err := ioutil.ReadFile("/proc/uptime")
+	if err != nil {
+		panic(err)
+	}
+	uptime_secnds, err := strconv.Atoi(strings.Split(string(uptime_str), ".")[0])
+	if err != nil {
+		panic(err)
+	}
+	uptime := time.Duration(int(uptime_secnds)) * time.Second
 
 	if uptime < *minUptime {
-		panic(fmt.Sprintf("uptime not Ok (%v !< %v)", uptime, *minUptime))
+		panic(fmt.Sprintf("uptime not Ok (%v < %v)", uptime, *minUptime))
+	} else {
+		Info.Println(fmt.Sprintf("uptime is Ok (%v > %v)", uptime, *minUptime))
+	}
+
+	if locksPlaceExists, _ := exists(*locks); !locksPlaceExists {
+		panic("specified locks location doesn't exist")
 	}
 
 	fh, err := os.Open(*locks)
 	if err != nil {
-		log.Println(err)
+		Error.Println(err)
 	}
 	defer fh.Close()
 	locksFh, err := fh.Stat()
@@ -59,7 +86,7 @@ func main() {
 
 	if locksFh.IsDir() {
 		// locks is a directory
-		log.Println("lock is a directory, scanning")
+		Info.Println("input is a directory, scanning")
 		fileList := []string{}
 		err := filepath.Walk(*locks, func(path string, f os.FileInfo, err error) error {
 			if ! f.IsDir() {
@@ -71,8 +98,11 @@ func main() {
 			panic(err)
 		}
 		if (len(fileList) == 0) {
-			log.Println("no locks found, killing containers")
-			firstDegree()
+			Info.Println("no locks found, killing containers")
+			err := firstDegree()
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			counter := 0
 			for i := range (fileList) {
@@ -81,30 +111,30 @@ func main() {
 					panic(err)
 				}
 				if isStale {
-					log.Println(fmt.Sprintf("found stale lock: %v, continuing..", fileList[i]))
+					Error.Println(fmt.Sprintf("found stale lock: %v, continuing..", fileList[i]))
 				} else {
-					panic("valid lock found, exiting...")
+					panic("valid lock found.")
 				}
 				counter++
 			}
-			log.Println(fmt.Sprintf("%v lock(s) checked", counter))
+			Info.Println(fmt.Sprintf("%v lock(s) checked", counter))
 		}
 	} else if locksFh.Mode().IsRegular() {
 			// locks is a file
-			log.Println("lock is a file, checking...")
+			Info.Println("lock is a file, checking...")
 			isStale, err := lockIsStale(*locks)
 			if err != nil {
 				panic(err)
 			}
 			if isStale {
-				log.Println("WARNING: stale lock, killing containers and shutting down")
+				Error.Println("WARNING: stale lock, killing containers and shutting down")
 				firstDegree()
 			} else {
 				panic("valid lock found, exiting.")
 			}
 	} else {
-		panic(errors.New(fmt.Sprintf("fucked up lockfile. -lock=%s", *locks)))
+		panic(errors.New(fmt.Sprintf("fucked up lock(s). -lock=%s", *locks)))
 	}
-	log.Println("shutting down...")
+	Info.Println("shutting down...")
 	time.Sleep(*sleepDur)
 }
