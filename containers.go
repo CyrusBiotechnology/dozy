@@ -3,7 +3,6 @@ import (
 	"os/exec"
 	"bytes"
 	"strings"
-	"log"
 )
 
 func getRunningContainers() ([]string, error) {
@@ -48,19 +47,20 @@ func killAllRunningContainers() error {
 	return nil
 }
 
-// kill all containers or die trying
-func firstDegree() {
+// kill all containers
+func firstDegree() error {
 	for {
 		running, err:= getRunningContainers()
 		if err != nil {
-			log.Println(err)
-		}
-		if len(running) == 0 {
+			return err
+			break
+		} else if len(running) != 0 {
+			err = killAllRunningContainers()
+			if err != nil {
+				return err
+			}
 			break
 		}
-		err = killAllRunningContainers()
-		if err != nil {
-			log.Println(err)
-		}
 	}
+	return nil
 }

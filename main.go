@@ -17,6 +17,13 @@ var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles"
 var lockDur = flag.Duration("duration", time.Minute * 10, "duration for which lock files are considered valid")
 var sleepDur = flag.Duration("sleep", 0, "duration to sleep at the end of script before exit 0")
 
+func exists(path string) (bool, error) {
+    _, err := os.Stat(path)
+    if err == nil { return true, nil }
+    if os.IsNotExist(err) { return false, nil }
+    return true, err
+}
+
 func lockIsStale(lockFile string) (bool, error) {
 	info, err := os.Stat(lockFile)
 	if err != nil {
@@ -49,7 +56,11 @@ func main() {
 	if uptime < *minUptime {
 		panic(fmt.Sprintf("uptime not Ok (%v < %v)", uptime, *minUptime))
 	} else {
-		fmt.Println("uptime is Ok (%v > %v)", uptime, *minUptime)
+		Info.Println(fmt.Sprintf("uptime is Ok (%v > %v)", uptime, *minUptime))
+	}
+
+	if locksPlaceExists, _ := exists(*locks); !locksPlaceExists {
+		panic("specified locks location doesn't exist")
 	}
 
 	fh, err := os.Open(*locks)
@@ -78,7 +89,10 @@ func main() {
 		}
 		if (len(fileList) == 0) {
 			Info.Println("no locks found, killing containers")
-			firstDegree()
+			err := firstDegree()
+			if err != nil {
+				panic(err)
+			}
 		} else {
 			counter := 0
 			for i := range (fileList) {
