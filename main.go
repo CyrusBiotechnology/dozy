@@ -12,14 +12,14 @@ import (
 	"path/filepath"
 )
 
-const VERSION = []int{0, 1, 5}
+var VERSION = [...]int{0, 1, 5}
 
-func getVersion() {
-	version := ""
-	for i := range(VERSION) {
-		version = version + "." + string(VERSION[i])
+func getVersion() string {
+	versionStr := fmt.Sprintf("v%v", VERSION[0])
+	for i := 1; i < len(VERSION); i++ {
+		versionStr = fmt.Sprintf("%v.%v", versionStr, VERSION[i])
 	}
-	return version
+	return versionStr
 }
 
 var minUptime = flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
