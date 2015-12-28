@@ -93,7 +93,7 @@ func main() {
 				if isStale {
 					log.Println(fmt.Sprintf("found stale lock: %v, continuing..", fileList[i]))
 				} else {
-					panic("valid lock found, exiting...")
+					panic("valid lock found.")
 				}
 				counter++
 			}
@@ -113,7 +113,7 @@ func main() {
 				panic("valid lock found, exiting.")
 			}
 	} else {
-		panic(errors.New(fmt.Sprintf("fucked up lockfile. -lock=%s", *locks)))
+		panic(errors.New(fmt.Sprintf("fucked up lock(s). -lock=%s", *locks)))
 	}
 	log.Println("shutting down...")
 	time.Sleep(*sleepDur)
