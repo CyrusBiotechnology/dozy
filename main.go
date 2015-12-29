@@ -47,6 +47,16 @@ func lockIsStale(lockFile string) (bool, error) {
 	}
 }
 
+func exit(message string) {
+	Info.Println(message)
+	os.Exit(1)
+}
+
+func exitE(message error) {
+	Error.Println(message)
+	os.Exit(2)
+}
+
 func main() {
 	flag.Parse()
 
@@ -55,22 +65,22 @@ func main() {
 
 	uptime_str, err := ioutil.ReadFile("/proc/uptime")
 	if err != nil {
-		panic(err)
+		exitE(err)
 	}
 	uptime_secnds, err := strconv.Atoi(strings.Split(string(uptime_str), ".")[0])
 	if err != nil {
-		panic(err)
+		exitE(err)
 	}
 	uptime := time.Duration(int(uptime_secnds)) * time.Second
 
 	if uptime < *minUptime {
-		panic(fmt.Sprintf("uptime not Ok (%v < %v)", uptime, *minUptime))
+		exit(fmt.Sprintf("not enough uptime (%v < %v)", uptime, *minUptime))
 	} else {
 		Info.Println(fmt.Sprintf("uptime is Ok (%v > %v)", uptime, *minUptime))
 	}
 
 	if locksPlaceExists, _ := exists(*locks); !locksPlaceExists {
-		panic("specified locks location doesn't exist")
+		exitE(errors.New("specified locks location doesn't exist"))
 	}
 
 	fh, err := os.Open(*locks)
@@ -80,8 +90,7 @@ func main() {
 	defer fh.Close()
 	locksFh, err := fh.Stat()
 	if err != nil {
-		panic(err)
-		return
+		exitE(err)
 	}
 
 	if locksFh.IsDir() {
@@ -95,25 +104,25 @@ func main() {
 			return nil
 		})
 		if err != nil {
-			panic(err)
+			exitE(err)
 		}
 		if (len(fileList) == 0) {
 			Info.Println("no locks found, killing containers")
 			err := firstDegree()
 			if err != nil {
-				panic(err)
+				exitE(err)
 			}
 		} else {
 			counter := 0
 			for i := range (fileList) {
 				isStale, err := lockIsStale(fileList[i])
 				if err != nil {
-					panic(err)
+					exitE(err)
 				}
 				if isStale {
 					Error.Println(fmt.Sprintf("found stale lock: %v, continuing..", fileList[i]))
 				} else {
-					panic("valid lock found.")
+					exitE(errors.New("valid lock found."))
 				}
 				counter++
 			}
@@ -124,16 +133,16 @@ func main() {
 			Info.Println("lock is a file, checking...")
 			isStale, err := lockIsStale(*locks)
 			if err != nil {
-				panic(err)
+				exitE(err)
 			}
 			if isStale {
 				Error.Println("WARNING: stale lock, killing containers and shutting down")
 				firstDegree()
 			} else {
-				panic("valid lock found, exiting.")
+				exitE(errors.New("valid lock found, exiting."))
 			}
 	} else {
-		panic(errors.New(fmt.Sprintf("fucked up lock(s). -lock=%s", *locks)))
+		exitE(errors.New(fmt.Sprintf("fucked up lock(s). -lock=%s", *locks)))
 	}
 	Info.Println("shutting down...")
 	time.Sleep(*sleepDur)
