@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 )
 
-var VERSION = [...]int{1, 0, 4}
+var VERSION = [...]int{1, 0, 5}
 
 func getVersion() string {
 	versionStr := fmt.Sprintf("v%v", VERSION[0])
@@ -61,7 +61,7 @@ func main() {
 	flag.Parse()
 
 	logging("/var/log/dozy", fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
-	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %vm, lock: %v", *minUptime, *lockDur, *locks))
+	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %v, lock: %v", *minUptime, *lockDur, *locks))
 
 	uptime_str, err := ioutil.ReadFile("/proc/uptime")
 	if err != nil {
