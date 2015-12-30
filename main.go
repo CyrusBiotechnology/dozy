@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 )
 
-var VERSION = [...]int{1, 0, 5}
+var VERSION = [...]int{1, 0, 6}
 
 func getVersion() string {
 	versionStr := fmt.Sprintf("v%v", VERSION[0])

@@ -26,7 +26,7 @@ func getRunningContainers() ([]string, error) {
 
 func killContainer(containerId string) error {
 	out := bytes.Buffer{}
-	cmd := exec.Command("docker", "kill", containerId)
+	cmd := exec.Command("docker", "stop", "—-time=30", containerId)
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	err := cmd.Run()
