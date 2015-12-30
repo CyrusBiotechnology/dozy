@@ -13,7 +13,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 #
 
 if [ -z "${1}" ]; then
-  echo "please specify release number"
+  echo "please specify version number"
   read release
 else
   release="${1}"
