@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 #
 #  Cut a new release
 #
@@ -19,7 +19,8 @@ else
   release="${1}"
 fi
 
-release_folder="${DIR}/dozy-${release}_linux-x86-64"
+release_name="dozy-${release}_linux-x86-64"
+release_folder="${DIR}/${release_name}"
 
 mkdir "${release_folder}"
 # build the executable
@@ -27,6 +28,9 @@ mkdir "${release_folder}"
 # copy the executable and readme
 cp "${DIR}/"{dozy,README.md} "${release_folder}"
 # pack the release
-tar czf "${release_folder}.tar.gz" "${release_folder}"
+cd "${DIR}"
+tar czf "${release_name}.tar.gz" "${release_name}"
+# clean up
+rm -r "${release_folder}"
 
-echo "release \"${release}\": ${release_folder}"
+echo "release \"${release}\": ${release_folder}.tar.gz"
