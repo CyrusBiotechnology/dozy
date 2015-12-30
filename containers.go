@@ -1,7 +1,8 @@
 package main
+
 import (
-	"os/exec"
 	"bytes"
+	"os/exec"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ func getRunningContainers() ([]string, error) {
 		return containers, err
 	}
 	containers = strings.Split(out.String(), "\n")
-	for i := range(containers) {
+	for i := range containers {
 		// remove empty container IDs
 		if containers[i] == "" {
 			containers = append(containers[:i], containers[i+1:]...)
@@ -41,7 +42,7 @@ func killAllRunningContainers() error {
 	if err != nil {
 		return err
 	}
-	for i := range(containers) {
+	for i := range containers {
 		killContainer(containers[i])
 	}
 	return nil
@@ -50,7 +51,7 @@ func killAllRunningContainers() error {
 // kill all containers
 func firstDegree() error {
 	for {
-		running, err:= getRunningContainers()
+		running, err := getRunningContainers()
 		if err != nil {
 			return err
 			break

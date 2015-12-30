@@ -1,15 +1,16 @@
 // +build darwin linux
 package main
+
 import (
-	"flag"
-	"os"
-	"fmt"
-	"time"
 	"errors"
-	"strings"
-	"strconv"
+	"flag"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var VERSION = [...]int{1, 0, 6}
@@ -24,14 +25,18 @@ func getVersion() string {
 
 var minUptime = flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
 var locks = flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
-var lockDur = flag.Duration("duration", time.Minute * 10, "duration for which lock files are considered valid")
+var lockDur = flag.Duration("duration", time.Minute*10, "duration for which lock files are considered valid")
 var sleepDur = flag.Duration("sleep", 0, "duration to sleep at the end of script before exit 0")
 
 func exists(path string) (bool, error) {
-    _, err := os.Stat(path)
-    if err == nil { return true, nil }
-    if os.IsNotExist(err) { return false, nil }
-    return true, err
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return true, err
 }
 
 func lockIsStale(lockFile string) (bool, error) {
@@ -98,7 +103,7 @@ func main() {
 		Info.Println("input is a directory, scanning")
 		fileList := []string{}
 		err := filepath.Walk(*locks, func(path string, f os.FileInfo, err error) error {
-			if ! f.IsDir() {
+			if !f.IsDir() {
 				fileList = append(fileList, path)
 			}
 			return nil
@@ -106,7 +111,7 @@ func main() {
 		if err != nil {
 			exitE(err)
 		}
-		if (len(fileList) == 0) {
+		if len(fileList) == 0 {
 			Info.Println("no locks found, killing containers")
 			err := firstDegree()
 			if err != nil {
@@ -114,7 +119,7 @@ func main() {
 			}
 		} else {
 			counter := 0
-			for i := range (fileList) {
+			for i := range fileList {
 				isStale, err := lockIsStale(fileList[i])
 				if err != nil {
 					exitE(err)
@@ -129,18 +134,18 @@ func main() {
 			Info.Println(fmt.Sprintf("%v lock(s) checked", counter))
 		}
 	} else if locksFh.Mode().IsRegular() {
-			// locks is a file
-			Info.Println("lock is a file, checking...")
-			isStale, err := lockIsStale(*locks)
-			if err != nil {
-				exitE(err)
-			}
-			if isStale {
-				Error.Println("WARNING: stale lock, killing containers and shutting down")
-				firstDegree()
-			} else {
-				exitE(errors.New("valid lock found, exiting."))
-			}
+		// locks is a file
+		Info.Println("lock is a file, checking...")
+		isStale, err := lockIsStale(*locks)
+		if err != nil {
+			exitE(err)
+		}
+		if isStale {
+			Error.Println("WARNING: stale lock, killing containers and shutting down")
+			firstDegree()
+		} else {
+			exitE(errors.New("valid lock found, exiting."))
+		}
 	} else {
 		exitE(errors.New(fmt.Sprintf("fucked up lock(s). -lock=%s", *locks)))
 	}

@@ -1,17 +1,17 @@
 package main
 
 import (
-	"os"
+	"fmt"
 	"io"
 	"log"
+	"os"
 	"path"
-	"fmt"
 )
 
 var (
-	Trace   *log.Logger
-	Info    *log.Logger
-	Error   *log.Logger
+	Trace *log.Logger
+	Info  *log.Logger
+	Error *log.Logger
 )
 
 func logging(directory string, initMessage string) {
