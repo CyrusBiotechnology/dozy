@@ -13,8 +13,8 @@ otherwise there was an error.
 
 # Requirements
 
-`dozy` targets Darwin (OS X) and Linux environments. Other systems are not currently 
-supported.
+`dozy` targets only Linux environments. Other systems are not currently supported because 
+we rely on `/proc` filesystem for retrieving system uptime.
 
 # Installing
 
