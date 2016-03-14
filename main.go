@@ -68,22 +68,6 @@ func main() {
 	logging("/var/log/dozy", fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
 	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %v, lock: %v", *minUptime, *lockDur, *locks))
 
-	uptime_str, err := ioutil.ReadFile("/proc/uptime")
-	if err != nil {
-		exitE(err)
-	}
-	uptime_secnds, err := strconv.Atoi(strings.Split(string(uptime_str), ".")[0])
-	if err != nil {
-		exitE(err)
-	}
-	uptime := time.Duration(int(uptime_secnds)) * time.Second
-
-	if uptime < *minUptime {
-		exit(fmt.Sprintf("not enough uptime (%v < %v)", uptime, *minUptime))
-	} else {
-		Info.Println(fmt.Sprintf("uptime is Ok (%v > %v)", uptime, *minUptime))
-	}
-
 	if locksPlaceExists, _ := exists(*locks); !locksPlaceExists {
 		exitE(errors.New("specified locks location doesn't exist"))
 	}
@@ -112,7 +96,7 @@ func main() {
 			exitE(err)
 		}
 		if len(fileList) == 0 {
-			Info.Println("no locks found, killing containers")
+			Info.Println("no locks found, stopping containers")
 			err := firstDegree()
 			if err != nil {
 				exitE(err)
@@ -141,7 +125,7 @@ func main() {
 			exitE(err)
 		}
 		if isStale {
-			Error.Println("WARNING: stale lock, killing containers and shutting down")
+			Error.Println("WARNING: stale lock, killing stopping and shutting down")
 			firstDegree()
 		} else {
 			exitE(errors.New("valid lock found, exiting."))
