@@ -11,6 +11,7 @@ import (
 var settings = Settings{}
 
 type DaemonConf struct {
+	PID             string        // Where to place the pidfile
 	KeyPollInterval time.Duration // Omit to use fs watcher (not yet supported)
 	Etcd            client.Config `json:"omitempty"` // Use etcd to record and receive census information
 }
@@ -27,11 +28,11 @@ type Settings struct {
 }
 
 func configure() {
-	daemonConfig := flag.String("daemon", "", "JSON configuration file to load. Overrides flags.")
-	minUptime := flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime>")
-	locks := flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles")
-	lockDur := flag.Duration("duration", time.Minute*10, "duration for which lock files are considered valid")
-	logDir := flag.String("logs", "/var/log/dozy", "Where to place log files")
+	daemonConfig := flag.String("daemon", "", "JSON configuration file to load. Overrides flags")
+	minUptime := flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime> (depreciated)")
+	locks := flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles (depreciated)")
+	lockDur := flag.Duration("duration", time.Minute*10, "duration for which lock files are considered valid (depreciated)")
+	logDir := flag.String("logs", "/var/log/dozy", "Where to place log files (depreciated)")
 	_ = flag.Duration("sleep", 0, "duration to sleep at the end of script before exit 0 (not used anymore)")
 
 	flag.Parse()
@@ -44,6 +45,9 @@ func configure() {
 		parser := json.NewDecoder(configFile)
 		if err = parser.Decode(&settings); err != nil {
 			panic(err)
+		}
+		if len(settings.Daemon.PID) == 0 {
+			settings.Daemon.PID = "/run/dozy.pid"
 		}
 	} else {
 		settings.MinUptime = *minUptime
