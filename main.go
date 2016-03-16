@@ -17,5 +17,16 @@ func main() {
 		panic("specified locks location doesn't exist")
 	}
 
-	getValidLocks(settings.Locks, settings.LockAge)
+	if settings.Daemon {
+		Info.Println("running as daemon")
+		daemon(settings.MinUptime, settings.Daemon.KeyPollInterval)
+	} else {
+		valid, err := getValidLocks(settings.Locks, settings.LockAge)
+		if err != nil {
+			panic(err)
+		}
+		if len(valid) > 0 {
+			panic("valid lock(s) found")
+		}
+	}
 }
