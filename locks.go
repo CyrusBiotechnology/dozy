@@ -40,19 +40,18 @@ func getValidLocks(root string, maxAge time.Duration) ([]Lock, error) {
 	}
 
 	if len(locks) == 0 {
-		Info.Println("no locks found, stopping all containers")
-		stopAllRunningContainersWithRetry()
+		return validated, nil
 	} else {
 		now := time.Now()
 		counter := 0
 		for i := range locks {
-			if locks[i].Modified.Before(now.Add(-maxAge)) {
-				Info.Println(fmt.Sprintf("found stale lock: %v", locks[i].Path))
+			counter++
+			if locks[i].Modified.After(now.Add(-maxAge)) {
 				validated = append(validated, locks[i])
 			} else {
+				Error.Println(fmt.Sprintf("found stale lock: %v", locks[i].Path))
 				continue
 			}
-			counter++
 		}
 		Trace.Println(fmt.Sprintf("%v lock(s) checked", counter))
 	}

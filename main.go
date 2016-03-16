@@ -9,7 +9,7 @@ var VERSION = [...]int{1, 0, 6}
 
 func main() {
 	configure()
-	logging(settings.Logs, fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
+	logging(fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
 	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %v, lock: %v",
 		settings.MinUptime, settings.LockAge, settings.Locks))
 
@@ -17,16 +17,24 @@ func main() {
 		panic("specified locks location doesn't exist")
 	}
 
-	if settings.Daemon {
+	if settings.DaemonMode {
 		Info.Println("running as daemon")
 		daemon(settings.MinUptime, settings.Daemon.KeyPollInterval)
 	} else {
 		valid, err := getValidLocks(settings.Locks, settings.LockAge)
-		if err != nil {
-			panic(err)
-		}
 		if len(valid) > 0 {
 			panic("valid lock(s) found")
 		}
+		running, err := getRunningContainers()
+		if len(running) > 0 {
+			Info.Println(fmt.Printf("no locks found, stopping %v containers", len(running)))
+			stopAllRunningContainersWithRetry()
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			Info.Println("didn't find any running containers")
+		}
+		Info.Println("ready to doze :)")
 	}
 }

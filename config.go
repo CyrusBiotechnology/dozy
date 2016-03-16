@@ -11,7 +11,7 @@ import (
 var settings = Settings{}
 
 type DaemonConf struct {
-	PID             string        // Where to place the pidfile
+	PID             string        // Where to place the pidfile (not yet supported)
 	KeyPollInterval time.Duration // Omit to use fs watcher (not yet supported)
 	Etcd            client.Config `json:"omitempty"` // Use etcd to record and receive census information
 }
@@ -19,7 +19,8 @@ type DaemonConf struct {
 type Settings struct {
 	Logs string // Where to store logs
 
-	Daemon DaemonConf // Daemon configuration
+	DaemonMode bool       // Run in daemon mode
+	Daemon     DaemonConf // Daemon configuration
 
 	MinUptime time.Duration // Duration after which to activate
 	MaxUptime time.Duration // Duration after which to force a shutdown
@@ -47,7 +48,7 @@ func configure() {
 			panic(err)
 		}
 		if len(settings.Daemon.PID) == 0 {
-			settings.Daemon.PID = "/run/dozy.pid"
+			settings.DaemonMode = true
 		}
 	} else {
 		settings.MinUptime = *minUptime
