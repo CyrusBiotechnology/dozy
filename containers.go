@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 func getRunningContainers() ([]string, error) {
@@ -25,43 +27,53 @@ func getRunningContainers() ([]string, error) {
 	return containers, nil
 }
 
-func killContainer(containerId string) error {
+func stopContainer(containerId string) error {
+	if len(containerId) == 0 {
+		return errors.New("may not provide empty containerID")
+	}
 	out := bytes.Buffer{}
 	cmd := exec.Command("docker", "stop", "—-time=30", containerId)
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return errors.New(out.String())
 	}
 	return nil
 }
 
-func killAllRunningContainers() error {
+func stopAllRunningContainers() error {
 	containers, err := getRunningContainers()
 	if err != nil {
 		return err
 	}
 	for i := range containers {
-		killContainer(containers[i])
+		stopContainer(containers[i])
 	}
 	return nil
 }
 
-// kill all containers
-func firstDegree() error {
+func sleepOnError(err error, d time.Duration) {
+	if err != nil {
+		time.Sleep(d)
+	}
+}
+
+// stop all containers
+func stopAllRunningContainersWithRetry() {
 	for {
 		running, err := getRunningContainers()
 		if err != nil {
-			return err
-			break
-		} else if len(running) != 0 {
-			err = killAllRunningContainers()
-			if err != nil {
-				return err
-			}
+			sleepOnError(err, time.Second*5)
+			continue
+		}
+		if len(running) != 0 {
+			err = stopAllRunningContainers()
+			sleepOnError(err, time.Second*5)
+			continue
+		} else {
 			break
 		}
 	}
-	return nil
+	return
 }
