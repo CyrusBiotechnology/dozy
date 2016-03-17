@@ -24,7 +24,7 @@ func (p *EtcdPollerConfig) New() {
 }
 
 func (p *EtcdPoller) Get() {
-	client.
+	//
 }
 
 // Call put() in a loop with backoff. In this state
