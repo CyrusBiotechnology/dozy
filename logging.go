@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -11,9 +13,9 @@ var (
 	Error *log.Logger
 )
 
-func logging(initMessage string) {
+func logging() {
 	// Logging setup
-	Trace = log.New(os.Stdout,
+	Trace = log.New(ioutil.Discard,
 		"TRACE: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
@@ -25,5 +27,5 @@ func logging(initMessage string) {
 		"ERROR: ",
 		log.Ldate|log.Ltime|log.Lshortfile)
 
-	Info.Println(initMessage)
+	Info.Println(fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
 }

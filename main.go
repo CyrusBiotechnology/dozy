@@ -5,11 +5,11 @@ import (
 	"fmt"
 )
 
-var VERSION = [...]int{1, 0, 6}
+var VERSION = [...]int{1, 1, 0}
 
 func main() {
 	configure()
-	logging(fmt.Sprint(" `( ◔ ౪◔)´  dozy ", getVersion()))
+	logging()
 	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %v, lock: %v",
 		settings.MinUptime, settings.LockAge, settings.Locks))
 
@@ -21,9 +21,12 @@ func main() {
 		Info.Println("running as daemon")
 		daemon(settings.MinUptime, settings.Daemon.KeyPollInterval)
 	} else {
-		valid, err := getValidLocks(settings.Locks, settings.LockAge)
+		valid, invalid, err := getLocks(settings.Locks, settings.LockAge)
+		if len(invalid) > 0 {
+			Error.Println(fmt.Printf("%v stale locks found", len(invalid)))
+		}
 		if len(valid) > 0 {
-			panic("valid lock(s) found")
+			panic(fmt.Sprintf("%v valid lock(s) found", len(valid)))
 		}
 		running, err := getRunningContainers()
 		if len(running) > 0 {

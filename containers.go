@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os/exec"
 	"strings"
 	"time"
@@ -27,13 +28,16 @@ func getRunningContainers() ([]string, error) {
 }
 
 func stopContainer(containerId string) error {
+	if len(containerId) == 0 {
+		return errors.New("may not provide empty containerID")
+	}
 	out := bytes.Buffer{}
 	cmd := exec.Command("docker", "stop", "—-time=30", containerId)
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 	err := cmd.Run()
 	if err != nil {
-		return err
+		return errors.New(out.String())
 	}
 	return nil
 }

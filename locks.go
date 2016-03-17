@@ -32,28 +32,27 @@ func getLockFilesRecursive(path string) ([]Lock, error) {
 }
 
 // Get locks in a directory `root` or `root` itself if it is a file
-func getValidLocks(root string, maxAge time.Duration) ([]Lock, error) {
-	validated := []Lock{}
+func getLocks(root string, maxAge time.Duration) (valid []Lock, invalid []Lock, err error) {
 	locks, err := getLockFilesRecursive(root)
 	if err != nil {
-		return validated, err
+		return valid, invalid, err
 	}
 
 	if len(locks) == 0 {
-		return validated, nil
+		return valid, invalid, nil
 	} else {
 		now := time.Now()
 		counter := 0
 		for i := range locks {
 			counter++
 			if locks[i].Modified.After(now.Add(-maxAge)) {
-				validated = append(validated, locks[i])
+				valid = append(valid, locks[i])
 			} else {
-				Error.Println(fmt.Sprintf("found stale lock: %v", locks[i].Path))
+				invalid = append(invalid, locks[i])
 				continue
 			}
 		}
-		Trace.Println(fmt.Sprintf("%v lock(s) checked", counter))
+		Trace.Println(fmt.Sprintf("%v lock(s) checked, %v valid %v invalid", counter, len(valid), len(invalid)))
 	}
-	return validated, nil
+	return valid, invalid, nil
 }
