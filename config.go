@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"github.com/coreos/etcd/client"
 	"os"
 	"time"
 )
@@ -13,7 +12,6 @@ var settings = Settings{}
 type DaemonConf struct {
 	PID             string        // Where to place the pidfile (not yet supported)
 	KeyPollInterval time.Duration // Omit to use fs watcher (not yet supported)
-	Etcd            client.Config `json:"omitempty"` // Use etcd to record and receive census information
 }
 
 type Settings struct {
