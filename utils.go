@@ -1,3 +1,4 @@
+// Contains code from Stack Overflow: http://stackoverflow.com/a/35615565/1342445
 package main
 
 import (

@@ -13,14 +13,14 @@ func main() {
 	Info.Println(fmt.Sprintf("minimum uptime: %v, locks valid for %v, lock: %v",
 		settings.MinUptime, settings.LockAge, settings.Locks))
 
-	if locksPlaceExists, _ := exists(settings.Locks); !locksPlaceExists {
-		panic("specified locks location doesn't exist")
-	}
-
 	if settings.DaemonMode {
 		Info.Println("running as daemon")
 		daemon(settings.MinUptime, settings.Daemon.KeyPollInterval)
 	} else {
+		if locksPlaceExists, _ := exists(settings.Locks); !locksPlaceExists {
+			panic("specified locks location doesn't exist")
+		}
+
 		valid, invalid, err := getLocks(settings.Locks, settings.LockAge)
 		if len(invalid) > 0 {
 			Error.Println(fmt.Printf("%v stale locks found", len(invalid)))
