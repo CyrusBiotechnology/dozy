@@ -1,4 +1,5 @@
 // +build darwin linux
+// Contains code from Stack Overflow: http://stackoverflow.com/a/35615565/1342445
 package main
 
 import (
@@ -16,7 +17,7 @@ func daemon(minUptime time.Duration, keyPollInterval time.Duration) {
 		IP:   net.IPv4(0, 0, 0, 0),
 		Port: 30000,
 	}
-	go censusServer(done, "udp4", &addr)
+	go Serve(done, "udp4", &addr)
 
 	if uptime < minUptime {
 		wait := (minUptime - uptime)
