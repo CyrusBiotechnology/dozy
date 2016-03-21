@@ -16,6 +16,7 @@ func daemon(minUptime time.Duration, keyPollInterval time.Duration) {
 		IP:   net.IPv4(0, 0, 0, 0),
 		Port: 30000,
 	}
+
 	go Serve(done, "udp4", &addr)
 
 	if uptime < minUptime {

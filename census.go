@@ -63,7 +63,7 @@ func (ng *NodeGraph) processMessage(packet string) error {
 func (ng *NodeGraph) calcInterval() time.Duration {
 	ng.Mutex.Lock()
 	defer ng.Mutex.Unlock()
-	return time.Second * time.Duration(len(ng.Nodes))
+	return time.Second * time.Duration(len(ng.Nodes)+1)
 }
 
 func (ng *NodeGraph) gc() {
@@ -100,7 +100,7 @@ func (sc *Server) doBeacon(stop <-chan struct{}, ng *NodeGraph) error {
 		return err
 	}
 	for {
-		after := time.After(time.Duration(ng.calcInterval()) * time.Second)
+		after := time.After(ng.calcInterval())
 		select {
 		case <-stop:
 			return nil
@@ -111,7 +111,7 @@ func (sc *Server) doBeacon(stop <-chan struct{}, ng *NodeGraph) error {
 				continue
 			}
 			sc.send(buf.String())
-			after = time.After(time.Duration(ng.calcInterval()) * time.Second)
+			after = time.After(ng.calcInterval())
 		}
 	}
 }

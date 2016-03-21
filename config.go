@@ -10,7 +10,7 @@ import (
 var settings = Settings{}
 
 type DaemonConf struct {
-	PID             string        // Where to place the pidfile (not yet supported)
+	PID             string        `json:"pid"` // Where to place the pidfile (not yet supported)
 	KeyPollInterval time.Duration // Omit to use fs watcher (not yet supported)
 }
 
@@ -27,7 +27,7 @@ type Settings struct {
 }
 
 func configure() {
-	daemonConfig := flag.String("daemon", "", "JSON configuration file to load. Overrides flags")
+	daemonConfig := flag.String("config", "", "JSON configuration file to load. Overrides flags")
 	minUptime := flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime> (depreciated)")
 	locks := flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles (depreciated)")
 	lockDur := flag.Duration("duration", time.Minute*10, "duration for which lock files are considered valid (depreciated)")
