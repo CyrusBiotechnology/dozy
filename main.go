@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var VERSION = [...]int{1, 1, 0}
+var VERSION = [...]int{1, 1, 1}
 
 func main() {
 	configure()

@@ -12,12 +12,16 @@ func daemon(minUptime time.Duration, keyPollInterval time.Duration) {
 	uptime, _ := getUptime()
 
 	done := make(chan struct{})
-	addr := net.UDPAddr{
+	listen := net.UDPAddr{
 		IP:   net.IPv4(0, 0, 0, 0),
-		Port: 30000,
+		Port: 19091,
+	}
+	bcast := net.UDPAddr{
+		IP:   net.IPv4(192, 168, 0, 255),
+		Port: 19091,
 	}
 
-	go Serve(done, "udp4", &addr)
+	go Serve(done, "udp4", &listen, &bcast)
 
 	if uptime < minUptime {
 		wait := (minUptime - uptime)

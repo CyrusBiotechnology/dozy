@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"container/list"
 	"errors"
-	"fmt"
 	"net"
 	"regexp"
 	"sync"
@@ -39,11 +38,23 @@ func NewNodeGraph() NodeGraph {
 	}
 }
 
+func (ng *NodeGraph) hasNode(UID string) bool {
+	if _, ok := ng.Nodes[UID]; ok {
+		return true
+	} else {
+		return false
+	}
+}
+
 // Update node adds or updates a node.
 func (ng *NodeGraph) updateNode(nodeUID string) {
 	ng.Mutex.Lock()
 	defer ng.Mutex.Unlock()
-	ng.History.Remove(ng.Nodes[nodeUID])
+	if ng.hasNode(nodeUID) {
+		ng.History.Remove(ng.Nodes[nodeUID])
+	} else {
+		Info.Println("new node:", nodeUID)
+	}
 	ng.Nodes[nodeUID] = ng.History.PushFront(Beacon{
 		Time:   time.Now(),
 		Sender: nodeUID,
@@ -51,9 +62,9 @@ func (ng *NodeGraph) updateNode(nodeUID string) {
 }
 
 // Takes a message and runs the appropriate action.
-func (ng *NodeGraph) processMessage(packet string) error {
-	if uidRegex.Match([]byte(packet[0:33])) {
-		ng.updateNode(packet[0:32])
+func (ng *NodeGraph) processMessage(buffer []byte) error {
+	if uidRegex.Match(buffer[0:33]) {
+		ng.updateNode(string(buffer[0:32]))
 		return nil
 	} else {
 		return formatErr
@@ -69,19 +80,26 @@ func (ng *NodeGraph) calcInterval() time.Duration {
 func (ng *NodeGraph) gc() {
 	ng.Mutex.Lock()
 	defer ng.Mutex.Unlock()
-	event := ng.History.Back().Value.(Beacon)
-	threshold := time.Now().Add(-time.Duration(ng.History.Len()) * time.Second)
-	for event.Time.Before(threshold) {
-		delete(ng.Nodes, event.Sender)
-		ng.History.Remove(ng.History.Back())
-		event = ng.History.Back().Value.(Beacon)
+	if ng.History.Len() > 0 {
+		event := ng.History.Back().Value.(Beacon)
+		threshold := time.Now().Add(-time.Duration(ng.History.Len()+5) * time.Second)
+		for event.Time.Before(threshold) {
+			delete(ng.Nodes, event.Sender)
+			ng.History.Remove(ng.History.Back())
+			event = ng.History.Back().Value.(Beacon)
+		}
 	}
 }
 
-func (sc *Server) send(message string) error {
+type Client struct {
+	Broadcast *net.UDPAddr // Where to sent packets to
+	UID       string       // Identify ourselves to peers
+}
+
+func (cl *Client) send(message string) error {
 	socket, err := net.DialUDP("udp4", nil, &net.UDPAddr{
-		IP:   sc.Address.IP,
-		Port: sc.Address.Port,
+		IP:   cl.Broadcast.IP,
+		Port: cl.Broadcast.Port,
 	})
 	defer socket.Close()
 
@@ -93,9 +111,15 @@ func (sc *Server) send(message string) error {
 }
 
 // Keep the swarm notified of our existence.
-func (sc *Server) doBeacon(stop <-chan struct{}, ng *NodeGraph) error {
+func (cl *Client) doBeacon(stop <-chan struct{}, ng *NodeGraph) error {
 	msgTmpl, err := template.New("message").Parse("{{.UID}}:")
 	buf := new(bytes.Buffer)
+	err = msgTmpl.Execute(buf, cl)
+	if err != nil {
+		Error.Println("error executing template")
+		return err
+	}
+	msg := buf.String()
 	if err != nil {
 		return err
 	}
@@ -105,12 +129,7 @@ func (sc *Server) doBeacon(stop <-chan struct{}, ng *NodeGraph) error {
 		case <-stop:
 			return nil
 		case <-after:
-			err := msgTmpl.Execute(buf, sc)
-			if err != nil {
-				Error.Println("error executing template")
-				continue
-			}
-			sc.send(buf.String())
+			cl.send(msg)
 			after = time.After(ng.calcInterval())
 		}
 	}
@@ -119,22 +138,24 @@ func (sc *Server) doBeacon(stop <-chan struct{}, ng *NodeGraph) error {
 // Census server listens for UDP broadcast packets and updates graph data.
 // Note that this may not work "out of the box" across network boundaries
 // depending on program and networking configuration.
-func Serve(exit <-chan struct{}, proto string, address *net.UDPAddr) {
+func Serve(exit <-chan struct{}, proto string, listen *net.UDPAddr, bcast *net.UDPAddr) {
 	uid, err := SecureRandomAlphaString(32)
 	if err != nil {
 		panic("could not generate uid!")
 	}
-	server := Server{
-		Address: address,
-		UID:     uid,
+	Info.Println("uid:", uid)
+	client := Client{
+		Broadcast: bcast,
+		UID:       uid,
 	}
 	graph := NewNodeGraph()
 	gc := time.NewTicker(time.Second)
-	socket, err := net.ListenUDP(proto, address)
+	socket, err := net.ListenUDP(proto, listen)
 	if err != nil {
-		return
+		panic(err)
 	}
-	server.doBeacon(exit, &graph)
+	Info.Println("listening at:", listen.IP, listen.Port)
+	go client.doBeacon(exit, &graph)
 
 	go func() {
 		for {
@@ -145,11 +166,11 @@ func Serve(exit <-chan struct{}, proto string, address *net.UDPAddr) {
 				graph.gc()
 			default:
 				buf := make([]byte, 4096)
-				n, remoteAddr, err := socket.ReadFromUDP(buf)
+				_, _, err := socket.ReadFromUDP(buf)
 				if err != nil {
-					return
+					Info.Println("problem reading packet")
 				}
-				fmt.Println("Got:", string(buf[0:n]), "From:", remoteAddr)
+				graph.processMessage(buf)
 			}
 		}
 	}()
