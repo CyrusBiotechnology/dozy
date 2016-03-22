@@ -1,12 +1,12 @@
 {
   "logs": "/tmp/",
   "daemonMode": true,
-  "minUptime": 1,
+  "minUptime": 0,
   "maxUptime": 1728000000000000,
   "locks": "/tmp/lockfiles",
   "lockAge": 7200000000000,
   "daemon": {
-    "pid": "/tmp/dozy.pid",
-	"keyPollInterval": 30000000000
+	"keyPollInterval": 10000000000,
+    "minPeers": 1
   }
 }

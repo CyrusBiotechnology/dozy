@@ -12,6 +12,8 @@ var settings = Settings{}
 type DaemonConf struct {
 	PID             string        `json:"pid"` // Where to place the pidfile (not yet supported)
 	KeyPollInterval time.Duration // Omit to use fs watcher (not yet supported)
+	MinPeers        int           // Minimum peers target
+	MaxPeers        int           // Maximum peers target
 }
 
 type Settings struct {
@@ -27,7 +29,7 @@ type Settings struct {
 }
 
 func configure() {
-	daemonConfig := flag.String("config", "", "JSON configuration file to load. Overrides flags")
+	configF := flag.String("config", "", "JSON configuration file to load. Overrides flags")
 	minUptime := flag.Duration("minuptime", 0, "will not exit 0 before uptime >= <minuptime> (depreciated)")
 	locks := flag.String("lock", "/tmp/lockfiles/", "where to look for lockfiles (depreciated)")
 	lockDur := flag.Duration("duration", time.Minute*10, "duration for which lock files are considered valid (depreciated)")
@@ -36,17 +38,15 @@ func configure() {
 
 	flag.Parse()
 
-	if len(*daemonConfig) > 0 {
-		configFile, err := os.Open(*daemonConfig)
+	if len(*configF) > 0 {
+		Info.Println("loading settings from file:", *configF)
+		configFile, err := os.Open(*configF)
 		if err != nil {
 			panic(err)
 		}
 		parser := json.NewDecoder(configFile)
 		if err = parser.Decode(&settings); err != nil {
 			panic(err)
-		}
-		if len(settings.Daemon.PID) == 0 {
-			settings.DaemonMode = true
 		}
 	} else {
 		settings.MinUptime = *minUptime

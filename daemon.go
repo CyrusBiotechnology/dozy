@@ -3,11 +3,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/CyrusBiotechnology/censusd"
 	"net"
 	"time"
 )
 
-func daemon(minUptime time.Duration, keyPollInterval time.Duration) {
+func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxPeers int, keyPollInterval time.Duration) error {
 	// Should we process errors here?
 	uptime, _ := getUptime()
 
@@ -21,7 +22,10 @@ func daemon(minUptime time.Duration, keyPollInterval time.Duration) {
 		Port: 19091,
 	}
 
-	go Serve(done, "udp4", &listen, &bcast)
+	stats, err := censusd.Serve(done, "udp4", &listen, &bcast)
+	if err != nil {
+		panic(err)
+	}
 
 	if uptime < minUptime {
 		wait := (minUptime - uptime)
@@ -31,6 +35,27 @@ func daemon(minUptime time.Duration, keyPollInterval time.Duration) {
 
 	keysTicker := time.NewTicker(keyPollInterval)
 	for _ = range keysTicker.C {
-		fmt.Println("tick!")
+		uptime, _ := getUptime()
+		stats.Mutex.RLock()
+		peers := stats.Nodes
+		stats.Mutex.RUnlock()
+		if maxUptime > time.Duration(0) && uptime > maxUptime {
+			Info.Println("this node is too old!", uptime)
+			Info.Println("uptime:", uptime, "peers:", peers)
+			close(done)
+			return nil
+		}
+		if minUptime > uptime {
+			Info.Println("not enough uptime")
+			continue
+		}
+		if peers <= minPeers {
+			Info.Println(peers, "peers")
+			continue
+		}
+		Info.Println("conditions satisfied. uptime:", uptime, "peers:", peers, "/", minPeers)
+		close(done)
+		return nil
 	}
+	panic("how did we get here?")
 }
