@@ -46,11 +46,9 @@ func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxP
 			return nil
 		}
 		if minUptime > uptime {
-			Info.Println("not enough uptime")
 			continue
 		}
 		if peers <= minPeers {
-			Info.Println(peers, "peers")
 			continue
 		}
 		Info.Println("conditions satisfied. uptime:", uptime, "peers:", peers, "/", minPeers)
