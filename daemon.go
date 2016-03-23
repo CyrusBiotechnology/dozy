@@ -17,12 +17,8 @@ func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxP
 		IP:   net.IPv4(0, 0, 0, 0),
 		Port: 19091,
 	}
-	bcast := net.UDPAddr{
-		IP:   net.IPv4(192, 168, 0, 255),
-		Port: 19091,
-	}
 
-	stats, err := censusd.Serve(done, "udp4", &listen, &bcast)
+	stats, err := censusd.Serve(done, "udp4", &listen)
 	if err != nil {
 		panic(err)
 	}
