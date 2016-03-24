@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var VERSION = [...]int{1, 1, 1}
+var VERSION = [...]int{1, 1, 2}
 
 func main() {
 	logging()
