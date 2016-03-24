@@ -1,9 +1,11 @@
+// Contains code from Stack Overflow: http://stackoverflow.com/a/35615565/1342445
 package main
 
 import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +23,9 @@ func getUptime() (time.Duration, error) {
 	uptime := time.Duration(0)
 	uptime_str, err := ioutil.ReadFile("/proc/uptime")
 	if err != nil {
+		if runtime.GOOS == "darwin" {
+			return time.Duration(1 * time.Hour), nil
+		}
 		return uptime, err
 	}
 	uptime_seconds, err := strconv.Atoi(strings.Split(string(uptime_str), ".")[0])
