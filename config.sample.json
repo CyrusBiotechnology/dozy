@@ -6,7 +6,8 @@
   "locks": "/tmp/lockfiles",
   "lockAge": 7200000000000,
   "daemon": {
-	"keyPollInterval": 10000000000,
-    "minPeers": 1
+	"keyPollInterval": 20000000000,
+    "minPeers": 1,
+    "group": "ddg"
   }
 }

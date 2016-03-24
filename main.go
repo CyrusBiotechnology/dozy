@@ -14,7 +14,8 @@ func main() {
 
 	if settings.DaemonMode {
 		Info.Println("running as daemon")
-		daemon(settings.MinUptime, settings.MaxUptime, settings.Daemon.MinPeers, settings.Daemon.MaxPeers, settings.Daemon.KeyPollInterval)
+		dset := settings.Daemon
+		daemon(settings.MinUptime, settings.MaxUptime, dset.MinPeers, dset.MaxPeers, dset.Group, dset.KeyPollInterval)
 	} else {
 		if locksPlaceExists, _ := exists(settings.Locks); !locksPlaceExists {
 			panic("specified locks location doesn't exist")

@@ -14,6 +14,7 @@ type DaemonConf struct {
 	KeyPollInterval time.Duration // Omit to use fs watcher (not yet supported)
 	MinPeers        int           // Minimum peers target
 	MaxPeers        int           // Maximum peers target
+	Group           string        // Group we are a member of
 }
 
 type Settings struct {

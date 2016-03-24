@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxPeers int, keyPollInterval time.Duration) error {
+func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxPeers int, groupID string, keyPollInterval time.Duration) error {
 	// Should we process errors here?
 	uptime, _ := getUptime()
 
@@ -18,7 +18,11 @@ func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxP
 		Port: 19091,
 	}
 
-	stats, err := censusd.Serve(done, "udp4", &listen)
+	censusServer, err := censusd.NewServer(&listen, groupID, "")
+	if err != nil {
+		panic(err)
+	}
+	stats, err := censusServer.Serve(done, "udp4")
 	if err != nil {
 		panic(err)
 	}
@@ -32,6 +36,7 @@ func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxP
 	keysTicker := time.NewTicker(keyPollInterval)
 	for _ = range keysTicker.C {
 		uptime, _ := getUptime()
+		censusServer.Graph.GC()
 		stats.Mutex.RLock()
 		peers := stats.Nodes
 		stats.Mutex.RUnlock()
@@ -47,7 +52,7 @@ func daemon(minUptime time.Duration, maxUptime time.Duration, minPeers int, maxP
 		if peers <= minPeers {
 			continue
 		}
-		Info.Println("conditions satisfied. uptime:", uptime, "peers:", peers, "/", minPeers)
+		Info.Println("conditions satisfied. uptime:", uptime, "peers:", peers, ">", minPeers)
 		close(done)
 		return nil
 	}
